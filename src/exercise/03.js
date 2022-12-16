@@ -4,10 +4,10 @@
 import * as React from 'react'
 import {
   fetchPokemon,
-  PokemonInfoFallback,
-  PokemonForm,
   PokemonDataView,
   PokemonErrorBoundary,
+  PokemonForm,
+  PokemonInfoFallback,
 } from '../pokemon'
 import {createResource} from '../utils'
 
@@ -26,6 +26,11 @@ function PokemonInfo({pokemonResource}) {
 // 🐨 create a SUSPENSE_CONFIG variable right here and configure timeoutMs to
 // whatever feels right to you, then try it out and tweak it until you're happy
 // with the experience.
+const SUSPENSE_CONFIG = {
+  timeoutMs: 4000,
+  busyDelayMs: 300,
+  busyMinDurationMs: 500,
+}
 
 function createPokemonResource(pokemonName) {
   // 🦉 once you've finished the exercise, play around with the delay...
@@ -47,7 +52,7 @@ function createPokemonResource(pokemonName) {
 
 function App() {
   const [pokemonName, setPokemonName] = React.useState('')
-  // 🐨 add a useTransition hook here
+  const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
 
   React.useEffect(() => {
@@ -55,10 +60,10 @@ function App() {
       setPokemonResource(null)
       return
     }
-    // 🐨 wrap this next line in a startTransition call
-    setPokemonResource(createPokemonResource(pokemonName))
-    // 🐨 add startTransition to the deps list here
-  }, [pokemonName])
+    startTransition(() => {
+      setPokemonResource(createPokemonResource(pokemonName))
+    })
+  }, [pokemonName, startTransition])
 
   function handleSubmit(newPokemonName) {
     setPokemonName(newPokemonName)
@@ -72,11 +77,7 @@ function App() {
     <div className="pokemon-info-app">
       <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
       <hr />
-      {/*
-        🐨 add inline styles here to set the opacity to 0.6 if the
-        useTransition above is pending
-      */}
-      <div className="pokemon-info">
+      <div className={`pokemon-info${isPending ? ' pokemon-loading' : ''}`}>
         {pokemonResource ? (
           <PokemonErrorBoundary
             onReset={handleReset}
